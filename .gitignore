@@ -1,0 +1,6 @@
+.idea/*
+__pycache__/*
+runs/*
+noise_table/*.*
+libriSpeechExcerpt
+VoiceActivity/__pycache__/*
