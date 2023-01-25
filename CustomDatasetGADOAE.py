@@ -1,6 +1,6 @@
 import math
 
-import gpuRIR
+# import gpuRIR
 import numpy as np
 import pyroomacoustics as pra
 import scipy
