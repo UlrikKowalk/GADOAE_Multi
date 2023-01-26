@@ -110,6 +110,9 @@ class Feature_GADOAE:
             final_feature[slice_idx:slice_idx + self.num_channels] = self.coordinates[:, dim] * 40
             slice_idx += self.num_channels
 
+        plt.plot(final_feature)
+        plt.show()
+
         final_feature = torch.unsqueeze(final_feature, 0)
 
         return final_feature

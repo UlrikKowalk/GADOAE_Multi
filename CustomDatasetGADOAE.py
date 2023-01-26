@@ -157,8 +157,15 @@ class CustomDatasetGADOAE(CustomDataset):
             pass
 
         # If necessary: repeat the last channel (simulate multiple sensors at same position)
-        for sensor in range(self.num_channels - num_sensors):
-            self.mic_coordinates_array = np.vstack([self.mic_coordinates_array, self.mic_coordinates_array[-1, :]])
+        # for sensor in range(self.num_channels - num_sensors):
+        #     self.mic_coordinates_array = np.vstack([self.mic_coordinates_array, self.mic_coordinates_array[-1, :]])
+
+        # repeat the whole array until num_channels is reached
+        temp = np.zeros(shape=(self.num_channels, 3))
+        temp[:num_sensors, :] = self.mic_coordinates_array
+        for sensor in range(num_sensors, self.num_channels):
+            temp[sensor, :] = self.mic_coordinates_array[sensor % num_sensors, :]
+        self.mic_coordinates_array = temp
 
         # Coordinates of array geometry but possibly with deviation
         coordinates = Coordinates(self.device, self.num_channels, self.dimensions_array,
