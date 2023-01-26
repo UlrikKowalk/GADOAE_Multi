@@ -39,7 +39,7 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'max_sir': 5,
               'room_dim': [9, 5, 3],
               'room_dim_delta': [1.0, 1.0, 0.5],
-              'mic_center': [4.5, 2.5, 1],
+              'mic_center': [4.5, 2.5, 1.0],
               'mic_center_delta': [0.5, 0.5, 0.5],
               'min_source_distance': 1.0, #1.0
               'max_source_distance': 3.0, #3.0
@@ -48,7 +48,7 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'vad_name': 'Energy', #Denk, Energy, MaKo, None, testNet
               'cut_silence': 'silence', #'none', 'beginning', 'silence'
               'frame_length': 256,
-              'max_sensor_spread': 0.2, #lookup noise: only up to 0.2
+              'max_sensor_spread': 0.1, #lookup noise: only up to 0.2
               'min_array_width': 0.4,
               'rasterize_array': False,
               'use_tau_mask': True,

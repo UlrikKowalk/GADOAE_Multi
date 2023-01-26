@@ -145,14 +145,14 @@ class CustomDatasetGADOAE(CustomDataset):
         self.max_dist_sensors_from_center = np.random.rand(1) * self.max_sensor_spread
 
         # Build random 3D array of sensors
-        self.mic_coordinates_array = mic_center + 2 * (
+        self.mic_coordinates_array = 2 * (
                 np.random.rand(num_sensors, 3) - 0.5) * self.max_dist_sensors_from_center
 
         # Flatten unnecessary dimensions
         if self.dimensions_array == 1:
-            self.mic_coordinates_array[[i for i in range(num_sensors)], 1:] = mic_center[1:]
+            self.mic_coordinates_array[[i for i in range(num_sensors)], 1:] = 0
         elif self.dimensions_array == 2:
-            self.mic_coordinates_array[[i for i in range(num_sensors)], 2] = mic_center[2]
+            self.mic_coordinates_array[[i for i in range(num_sensors)], 2] = 0
         elif self.dimensions_array == 3:
             pass
 

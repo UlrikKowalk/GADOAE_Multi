@@ -105,7 +105,7 @@ class Feature_GADOAE:
                 slice_idx += 1
 
         # append array geometry to feature vector (depending on how many dimensions we train)
-        # serially [x0, x1, ..., y0, y1, ...]
+        # serially [x0, x1, ..., y0, y1, ..., z0, z1, ...]
         for dim in range(self.num_dimensions):
             final_feature[slice_idx:slice_idx + self.num_channels] = self.coordinates[:, dim] * 40
             slice_idx += self.num_channels
