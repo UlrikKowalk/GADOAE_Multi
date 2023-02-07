@@ -11,12 +11,12 @@ from Training import Training
 
 writer = SummaryWriter("runs/gcc")
 
-NUM_SAMPLES = 10
-EPOCHS = 10
+NUM_SAMPLES = 100000
+EPOCHS = 500
 NUM_CLASSES = 72
 BATCH_SIZE = 32
-LEARNING_RATE = 0.0001
-NUM_WORKERS = 1
+LEARNING_RATE = 0.00001
+NUM_WORKERS = 24
 
 RATIO = 0.8
 BASE_DIR_ML = os.getcwd()
@@ -65,7 +65,7 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'max_sensors': 15}
 
 is_training = True
-is_continue = False
+is_continue = True
 
 
 def boolean_string(s):
