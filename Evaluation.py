@@ -8,10 +8,9 @@ import FindPeaks
 # from SourceManager import SourceManager
 
 
-def get_filename(trained_net, snr, t60, sir, uncertainty, parameters):
-    return f'Results/{os.path.splitext(os.path.basename(trained_net))[0]}_SNR_{snr}_T60_{t60}_SIR_{sir}_uncertainty_{uncertainty}_VAD_{parameters["vad_name"]}_' \
-           f'Taumask_{parameters["use_tau_mask"]}_UseInformed_{parameters["use_informed"]}_' \
-           f'{parameters["informed_style"]}_Percentile_{parameters["mask_percentile"]}.csv'
+def get_filename(trained_net, snr, t60, uncertainty, parameters):
+    return f'Results/{os.path.splitext(os.path.basename(trained_net))[0]}_SNR_{snr}_T60_{t60}_uncertainty_{uncertainty}_VAD_{parameters["vad_name"]}' \
+           f'.csv'
 
 
 def estimate_srpphat_with_interpolation(model, sample, MAX_THETA, NUM_CLASSES, voice_activity):
@@ -148,7 +147,7 @@ def estimate_cnn_with_interpolation(model, sample, MAX_THETA, NUM_CLASSES, voice
     return estimate, predictions
 
 
-def estimate_cnn(model, sample, voice_activity):
+def estimate_dnn(model, sample, voice_activity):
 
     model.eval()
 

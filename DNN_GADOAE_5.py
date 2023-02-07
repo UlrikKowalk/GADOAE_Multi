@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 
 class DNN_GADOAE_5(nn.Module):
 
-    def __init__(self, num_channels, num_dimensions, output_classes):
+    def __init__(self, num_channels, num_dimensions, num_output_classes):
         super().__init__()
 
         self.num_input = int(num_channels * (num_channels - 1) / 2 + num_dimensions * num_channels)
-        self.num_classes = output_classes
+        self.num_classes = num_output_classes
 
         self.flatten0 = nn.Flatten()
 

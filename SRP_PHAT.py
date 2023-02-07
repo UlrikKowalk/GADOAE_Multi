@@ -45,7 +45,6 @@ class SRP_PHAT:
     def calculate_uninformed(self, signal):
 
         spec_frames = np.expand_dims(a=np.fft.rfft(signal[:self.num_channels, :], n=self.frame_length, axis=-1), axis=-1)
-
         self.srp_phat.locate_sources(X=spec_frames, freq_range=[1, self.sample_rate/2])
         return self.srp_phat.grid.values
 
