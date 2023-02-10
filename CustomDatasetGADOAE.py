@@ -1,4 +1,5 @@
 import math
+import random
 
 # import gpuRIR
 import numpy as np
@@ -22,9 +23,11 @@ class CustomDatasetGADOAE(CustomDataset):
         self.min_sensors = parameters['min_sensors']
         self.max_sensors = parameters['max_sensors']
         self.num_channels = parameters['max_sensors']
+        self.augmentation_style = parameters['augmentation_style']
 
         # greatest distance between two microphones within the array
         self.desired_width_samples = int(np.ceil(2.0 * self.max_sensor_spread / self.nC * self.sample_rate))
+        self.max_dist_sensors_from_center = None
 
     def generate_sample_CPU(self, room_dim, rt_60_desired, source_position, base_signal, array, mic_center):
 
@@ -62,47 +65,47 @@ class CustomDatasetGADOAE(CustomDataset):
 
         return x
 
-    def generate_sample_GPU(self, room_dim, rt_60_desired, source_position, base_signal, array, mic_center):
-
-        beta = gpuRIR.beta_SabineEstimation(room_sz=room_dim, T60=rt_60_desired)
-
-        # array centered around origin
-        array_plus_direct = np.append(self.mic_coordinates_array, np.expand_dims(self.mic_coordinates_direct, axis=0),
-                                      axis=0)
-
-        # now 'denormalize' to be centered around desired array center
-        array_plus_direct += mic_center
-
-        rirs = gpuRIR.simulateRIR(room_sz=room_dim,
-                                  beta=beta,
-                                  pos_src=source_position,
-                                  pos_rcv=array_plus_direct,
-                                  nb_img=(2, 2, 2),
-                                  Tmax=(self.len_IR / self.sample_rate),
-                                  fs=self.sample_rate)
-
-        # x = gpuRIR.simulateTrajectory(source_signal=base_signal, RIRs=rirs)
-
-        x = np.zeros(shape=(self.num_channels + 1, base_signal.shape[0] + rirs.shape[2] - 1))
-        # x = torch.zeros(size=(self.num_channels + 1, base_signal.shape[1] + rirs.shape[2] - 1), device='cuda')
-
-        for channel in range(self.num_channels):
-            x[channel, :] = oaconvolve(rirs[0, channel, :], base_signal.cpu().detach().numpy(), mode='full')
-
-
-        # estimate source distance from signals
-        self.dist_samples = self.estimate_source_distance(x)
-
-        x = torch.from_numpy(x).float().to('cuda')
-
-        # last channel is clean signal
-        x[self.num_channels, 0:len(base_signal)] = base_signal
-
-        #  shift the 'direct' signal -> simulate acoustic transmission
-        x[self.num_channels, :] = torch.roll(input=x[self.num_channels, :], shifts=self.dist_samples, dims=-1)
-        x = x[:, :len(base_signal)]
-
-        return x
+    # def generate_sample_GPU(self, room_dim, rt_60_desired, source_position, base_signal, array, mic_center):
+    #
+    #     beta = gpuRIR.beta_SabineEstimation(room_sz=room_dim, T60=rt_60_desired)
+    #
+    #     # array centered around origin
+    #     array_plus_direct = np.append(self.mic_coordinates_array, np.expand_dims(self.mic_coordinates_direct, axis=0),
+    #                                   axis=0)
+    #
+    #     # now 'denormalize' to be centered around desired array center
+    #     array_plus_direct += mic_center
+    #
+    #     rirs = gpuRIR.simulateRIR(room_sz=room_dim,
+    #                               beta=beta,
+    #                               pos_src=source_position,
+    #                               pos_rcv=array_plus_direct,
+    #                               nb_img=(2, 2, 2),
+    #                               Tmax=(self.len_IR / self.sample_rate),
+    #                               fs=self.sample_rate)
+    #
+    #     # x = gpuRIR.simulateTrajectory(source_signal=base_signal, RIRs=rirs)
+    #
+    #     x = np.zeros(shape=(self.num_channels + 1, base_signal.shape[0] + rirs.shape[2] - 1))
+    #     # x = torch.zeros(size=(self.num_channels + 1, base_signal.shape[1] + rirs.shape[2] - 1), device='cuda')
+    #
+    #     for channel in range(self.num_channels):
+    #         x[channel, :] = oaconvolve(rirs[0, channel, :], base_signal.cpu().detach().numpy(), mode='full')
+    #
+    #
+    #     # estimate source distance from signals
+    #     self.dist_samples = self.estimate_source_distance(x)
+    #
+    #     x = torch.from_numpy(x).float().to('cuda')
+    #
+    #     # last channel is clean signal
+    #     x[self.num_channels, 0:len(base_signal)] = base_signal
+    #
+    #     #  shift the 'direct' signal -> simulate acoustic transmission
+    #     x[self.num_channels, :] = torch.roll(input=x[self.num_channels, :], shifts=self.dist_samples, dims=-1)
+    #     x = x[:, :len(base_signal)]
+    #
+    #     return x
 
     def add_signal_and_noise(self, signal, noise):
 
@@ -112,6 +115,42 @@ class CustomDatasetGADOAE(CustomDataset):
 
     def get_desired_sir(self):
         return self.min_sir + torch.rand(1, device=self.device) * torch.abs(self.max_sir - self.min_sir)
+
+    @staticmethod
+    def augment_channels_repitition_last(coordinates, num_channels_desired, num_channels):
+        # repeat the last channel (simulate multiple sensors at same position)
+        for sensor in range(num_channels_desired - num_channels):
+            coordinates = np.vstack([coordinates, coordinates[-1, :]])
+        return coordinates
+
+    @staticmethod
+    def augment_channels_repetition_all(coordinates, num_channels_desired, num_channels):
+        # repeat the whole array until num_channels is reached
+        temp = np.zeros(shape=(num_channels_desired, 3))
+        temp[:num_channels, :] = coordinates
+        for sensor in range(num_channels, num_channels_desired):
+            temp[sensor, :] = coordinates[sensor % num_channels, :]
+        return temp
+
+    @staticmethod
+    def augment_channels_repetition_random(coordinates, num_channels_desired, num_channels):
+        temp_coordinates = np.zeros(shape=(num_channels_desired, 3))
+        temp_coordinates[:num_channels, :] = coordinates
+        num_coordinates = num_channels
+        # should another 'block' be attached?
+        while num_coordinates < num_channels_desired:
+            roll_index = np.random.randint(low=0, high=num_channels)
+            temp = np.roll(a=coordinates, shift=roll_index, axis=0)
+
+            temp_index = 0
+            # fill the temporary array as long as size is not exceeded
+            while(temp_index < num_channels and num_coordinates < num_channels_desired):
+                temp_coordinates[num_coordinates, :] = temp[temp_index, :]
+
+                temp_index += 1
+                num_coordinates += 1
+
+        return temp_coordinates
 
     def generate_test_signal(self, training=False):
 
@@ -137,16 +176,12 @@ class CustomDatasetGADOAE(CustomDataset):
         # Cut silent parts / beginnings / ... - based on desired way of cutting and vad
         _, voice_activity = self.get_vad(signal=base_signal_desired)
 
-        # Randomised center of array
-        mic_center = self.mic_center + (2 * np.random.rand(3) - 1) * self.mic_center_delta
-
         # Build randomized array
         num_sensors = int(self.min_sensors + np.random.rand(1) * np.abs(self.max_sensors - self.min_sensors))
         self.max_dist_sensors_from_center = np.random.rand(1) * self.max_sensor_spread
 
         # Build random 3D array of sensors
-        self.mic_coordinates_array = 2 * (
-                np.random.rand(num_sensors, 3) - 0.5) * self.max_dist_sensors_from_center
+        self.mic_coordinates_array = 2 * (np.random.rand(num_sensors, 3) - 0.5) * self.max_dist_sensors_from_center
 
         # Flatten unnecessary dimensions
         if self.dimensions_array == 1:
@@ -156,16 +191,26 @@ class CustomDatasetGADOAE(CustomDataset):
         elif self.dimensions_array == 3:
             pass
 
-        # If necessary: repeat the last channel (simulate multiple sensors at same position)
-        # for sensor in range(self.num_channels - num_sensors):
-        #     self.mic_coordinates_array = np.vstack([self.mic_coordinates_array, self.mic_coordinates_array[-1, :]])
-
-        # repeat the whole array until num_channels is reached
-        temp = np.zeros(shape=(self.num_channels, 3))
-        temp[:num_sensors, :] = self.mic_coordinates_array
-        for sensor in range(num_sensors, self.num_channels):
-            temp[sensor, :] = self.mic_coordinates_array[sensor % num_sensors, :]
-        self.mic_coordinates_array = temp
+        if self.augmentation_style == 'repeat':
+            # Data augmentation: repeat the last channel (simulate multiple sensors at same position)
+            self.mic_coordinates_array = self.augment_channels_repitition_last(
+                coordinates=self.mic_coordinates_array,
+                num_channels_desired=self.num_channels,
+                num_channels=num_sensors)
+        elif self.augmentation_style == 'repeat_all':
+            # Data augmentation: repeat the whole array until num_channels is reached
+            self.mic_coordinates_array = self.augment_channels_repetition_all(
+                coordinates=self.mic_coordinates_array,
+                num_channels_desired=self.num_channels,
+                num_channels=num_sensors)
+        elif self.augmentation_style == 'roll':
+            # Data augmentation: fill array with randomly permuted coordinates
+            self.mic_coordinates_array = self.augment_channels_repetition_random(
+                coordinates=self.mic_coordinates_array,
+                num_channels_desired=self.num_channels,
+                num_channels=num_sensors)
+        else:
+            raise Exception(f'Unknown argument given for <augmentation_style>: {self.augmentation_style}')
 
         # Coordinates of array geometry but possibly with deviation
         coordinates = Coordinates(self.device, self.num_channels, self.dimensions_array,
@@ -226,8 +271,9 @@ class CustomDatasetGADOAE(CustomDataset):
                                                                  use_vad=True)
             x_secondary *= torch.pow(10, -desired_sir / 10)
 
-        ###############################################  Add Sources  ##################################################
+        #############################################  Overlay Sources  ################################################
 
+        # overlay primary source and ALL secondary sources
         x = x_primary + x_secondary
 
         #############################################  Establish Noise  ################################################
@@ -237,7 +283,6 @@ class CustomDatasetGADOAE(CustomDataset):
 
         # Mix signal and noise to satisfy snr criterion (no noise in direct signal of course)
         x_complete = self.add_signal_and_noise(x, noise)
-
 
         # fig, ax = plt.subplots(2)
         # ax[0].plot(x_complete[-1, :])
@@ -249,4 +294,3 @@ class CustomDatasetGADOAE(CustomDataset):
                       'signal_type': signal_type}
 
         return x_complete, primary_label, coordinates, voice_activity, parameters, base_signal_desired
-

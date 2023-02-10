@@ -38,7 +38,7 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'noise_sampled_dir': NOISE_SAMPLED_DIR,
               'mic_array': None,
               'sample_rate': 8000,
-              'signal_length': 2,
+              'signal_length': 5,
               'min_rt_60': None,
               'max_rt_60': None,
               'min_snr': None,
@@ -70,7 +70,8 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'dimensions_array': 2,
               'mask_percentile': None,
               'min_sensors': 5,
-              'max_sensors': 5}
+              'max_sensors': 5,
+              'augmentation_style': 'roll'}
 
 
 def boolean_string(s):

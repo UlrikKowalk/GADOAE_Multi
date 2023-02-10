@@ -62,7 +62,8 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'dimensions_array': 2,
               'mask_percentile': 50,
               'min_sensors': 15,
-              'max_sensors': 15}
+              'max_sensors': 15,
+              'augmentation_style': 'roll'}
 
 is_training = True
 is_continue = True

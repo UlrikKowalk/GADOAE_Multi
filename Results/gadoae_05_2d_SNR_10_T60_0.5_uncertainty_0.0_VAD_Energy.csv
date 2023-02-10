@@ -1,0 +1,6 @@
+Target,Prediction,Prediction_SRPPHAT,Prediction_MUSIC,T60,SNR,Signal Type
+18,18.0,18.0,18.0,"tensor([[0.5000]], dtype=torch.float64)",tensor([[10.]]),['s']
+18,18.0,18.0,18.0,"tensor([[0.5000]], dtype=torch.float64)",tensor([[10.]]),['s']
+42,42.0,43.0,42.0,"tensor([[0.5000]], dtype=torch.float64)",tensor([[10.]]),['s']
+8,7.0,10.0,10.0,"tensor([[0.5000]], dtype=torch.float64)",tensor([[10.]]),['s']
+11,11.0,18.0,13.0,"tensor([[0.5000]], dtype=torch.float64)",tensor([[10.]]),['s']

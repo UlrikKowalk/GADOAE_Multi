@@ -17,14 +17,14 @@ from MUSIC import MUSIC
 from SRP_PHAT import SRP_PHAT
 from Timer import Timer
 
-NUM_SAMPLES = 10
+NUM_SAMPLES = 5
 BATCH_SIZE = 1
 MAX_THETA = 360.0
 NUM_CLASSES = 72
 NUM_WORKERS = 1
 
 LIST_SNR = [0, 5, 10, 15, 20]
-LIST_T60 = [0.12, 0.50, 1.0]
+LIST_T60 = [0.13, 0.50, 1.0]
 LIST_UNCERTAINTY = [0.00]
 
 BASE_DIR_ML = os.getcwd()
@@ -70,7 +70,8 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'dimensions_array': 2,
               'mask_percentile': None,
               'min_sensors': 15,
-              'max_sensors': 15}
+              'max_sensors': 15,
+              'augmentation_style': 'roll'}
 
 
 def boolean_string(s):
@@ -314,7 +315,7 @@ if __name__ == '__main__':
                         print(
                             f"MUSIC: Average angular error: {np.mean(list_error_music)} [{np.median(list_error_music)}] degrees, MAE: {MAE_MUSIC}, Accuracy: {acc_music}")
 
-    Evaluation.plot_error(df=df, num_classes=NUM_CLASSES)
+    # Evaluation.plot_error(df=df, num_classes=NUM_CLASSES)
     print("done.")
 
 
