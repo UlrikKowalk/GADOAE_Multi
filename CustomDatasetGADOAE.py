@@ -22,7 +22,7 @@ class CustomDatasetGADOAE(CustomDataset):
 
         self.min_sensors = parameters['min_sensors']
         self.max_sensors = parameters['max_sensors']
-        self.num_channels = parameters['max_sensors']
+        self.num_channels = parameters['num_channels']
         self.augmentation_style = parameters['augmentation_style']
 
         # greatest distance between two microphones within the array
@@ -191,7 +191,7 @@ class CustomDatasetGADOAE(CustomDataset):
         elif self.dimensions_array == 3:
             pass
 
-        if self.augmentation_style == 'repeat':
+        if self.augmentation_style == 'repeat_last':
             # Data augmentation: repeat the last channel (simulate multiple sensors at same position)
             self.mic_coordinates_array = self.augment_channels_repitition_last(
                 coordinates=self.mic_coordinates_array,
@@ -203,7 +203,7 @@ class CustomDatasetGADOAE(CustomDataset):
                 coordinates=self.mic_coordinates_array,
                 num_channels_desired=self.num_channels,
                 num_channels=num_sensors)
-        elif self.augmentation_style == 'roll':
+        elif self.augmentation_style == 'repeat_roll':
             # Data augmentation: fill array with randomly permuted coordinates
             self.mic_coordinates_array = self.augment_channels_repetition_random(
                 coordinates=self.mic_coordinates_array,

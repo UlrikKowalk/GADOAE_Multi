@@ -9,8 +9,9 @@ import FindPeaks
 
 
 def get_filename(trained_net, snr, t60, uncertainty, parameters):
-    return f'Results/{os.path.splitext(os.path.basename(trained_net))[0]}_SNR_{snr}_T60_{t60}_uncertainty_{uncertainty}_VAD_{parameters["vad_name"]}' \
-           f'.csv'
+    return f'Results/{os.path.splitext(os.path.basename(trained_net))[0]}_SNR_{snr}_T60_{t60}_' \
+            f'augmentation_{parameters["augmentation_style"]}_uncertainty_{uncertainty}_VAD_{parameters["vad_name"]}' \
+            f'.csv'
 
 
 def estimate_srpphat_with_interpolation(model, sample, MAX_THETA, NUM_CLASSES, voice_activity):

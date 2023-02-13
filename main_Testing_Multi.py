@@ -21,11 +21,13 @@ NUM_SAMPLES = 5
 BATCH_SIZE = 1
 MAX_THETA = 360.0
 NUM_CLASSES = 72
+MAX_CHANNELS = 15
 NUM_WORKERS = 1
 
-LIST_SNR = [0, 5, 10, 15, 20]
-LIST_T60 = [0.13, 0.50, 1.0]
+LIST_SNR = [10]
+LIST_T60 = [0.50]
 LIST_UNCERTAINTY = [0.00]
+LIST_AUGMENTATION_STYLE = ['repeat_last', 'repeat_all', 'repeat_roll']
 
 BASE_DIR_ML = os.getcwd()
 SPEECH_DIR = "../LibriSpeech/test-clean"
@@ -71,7 +73,8 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'mask_percentile': None,
               'min_sensors': 3,
               'max_sensors': 15,
-              'augmentation_style': 'roll'} # repeat, repeat_all, roll
+              'num_channels': MAX_CHANNELS,
+              'augmentation_style': 'None'} # repeat_last, repeat_all, repeat_roll
 
 
 def boolean_string(s):
@@ -101,19 +104,22 @@ if __name__ == '__main__':
 
     for SNR in LIST_SNR:
         for T60 in LIST_T60:
+            for AUGMENTATION_STYLE in LIST_AUGMENTATION_STYLE:
                 for UNCERTAINTY in LIST_UNCERTAINTY:
 
                         PARAMETERS['min_snr'] = SNR
                         PARAMETERS['max_snr'] = SNR
                         PARAMETERS['min_rt_60'] = T60
                         PARAMETERS['max_rt_60'] = T60
+                        PARAMETERS['augmentation_style'] = AUGMENTATION_STYLE
                         PARAMETERS['max_uncertainty'] = UNCERTAINTY
+
                         file_name = Evaluation.get_filename(trained_net, SNR, T60, UNCERTAINTY, PARAMETERS)
                         os.system('color')
                         print(colored(f'Testing: {file_name}', 'grey'))
                         dataset = Dataset_Testing_Multi(parameters=PARAMETERS, device=device)
                         # creating dnn and pushing it to CPU/GPU(s)
-                        dnn = DNN_GADOAE_Multi(num_channels=PARAMETERS['max_sensors'],
+                        dnn = DNN_GADOAE_Multi(num_channels=MAX_CHANNELS,
                                                num_dimensions=PARAMETERS['dimensions_array'],
                                                num_output_classes=dataset.get_num_classes())
 
