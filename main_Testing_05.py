@@ -11,17 +11,17 @@ from torch.utils.data import DataLoader
 import sys
 
 import Evaluation
-from DNN_GADOAE_Multi import DNN_GADOAE_Multi
+from DNN_GADOAE_5 import DNN_GADOAE_5
 from Dataset_Testing_Multi import Dataset_Testing_Multi
 from MUSIC import MUSIC
 from SRP_PHAT import SRP_PHAT
 from Timer import Timer
 
-NUM_SAMPLES = 5
+NUM_SAMPLES = 10
 BATCH_SIZE = 1
 MAX_THETA = 360.0
 NUM_CLASSES = 72
-MAX_CHANNELS = 15
+MAX_CHANNELS = 5
 NUM_WORKERS = 1
 
 LIST_SNR = [10]
@@ -74,7 +74,9 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'min_sensors': 5,
               'max_sensors': 5,
               'num_channels': MAX_CHANNELS,
-              'augmentation_style': 'None'} # repeat_last, repeat_all, repeat_roll
+              'augmentation_style': 'None', # repeat_last, repeat_all, repeat_roll
+              'leave_out_exact_values': False, #ATTENTION: During evaluation this MUST be set to False
+              'use_in_between_doas': True}
 
 
 def boolean_string(s):
@@ -94,10 +96,10 @@ if __name__ == '__main__':
     # print(f'Net: {args.net[1:-1]}')
 
     device = "cpu"
-    # if torch.cuda.is_available():
-    #     device_inference = 'cuda'
-    # else:
-    device_inference = device
+    if torch.cuda.is_available():
+        device_inference = 'cuda'
+    else:
+        device_inference = device
 
     trained_net = f'{BASE_DIR_ML}/{args.net[1:-1]}'
     # print(f"Using device '{device}'.")
@@ -113,13 +115,13 @@ if __name__ == '__main__':
                         PARAMETERS['max_rt_60'] = T60
                         PARAMETERS['augmentation_style'] = AUGMENTATION_STYLE
                         PARAMETERS['max_uncertainty'] = UNCERTAINTY
-                        
+
                         file_name = Evaluation.get_filename(trained_net, SNR, T60, UNCERTAINTY, PARAMETERS)
                         os.system('color')
                         print(colored(f'Testing: {file_name}', 'grey'))
                         dataset = Dataset_Testing_Multi(parameters=PARAMETERS, device=device)
                         # creating dnn and pushing it to CPU/GPU(s)
-                        dnn = DNN_GADOAE_Multi(num_channels=PARAMETERS['max_sensors'],
+                        dnn = DNN_GADOAE_5(num_channels=MAX_CHANNELS,
                                                num_dimensions=PARAMETERS['dimensions_array'],
                                                num_output_classes=dataset.get_num_classes())
 
@@ -176,7 +178,6 @@ if __name__ == '__main__':
                             voice_activity = voice_activity[0]
                             coordinates = coordinates[0, :, :].cpu().detach().numpy()
 
-
                             predicted_music = 0
                             predicted_srpphat = 0
 
@@ -191,29 +192,29 @@ if __name__ == '__main__':
                             music = MUSIC(coordinates=coordinates,
                                           parameters=PARAMETERS)
 
-                            predicted, predictions_dnn = Evaluation.estimate_dnn(model=dnn,
-                                                                                 sample=features.squeeze(dim=0),
-                                                                                 voice_activity=voice_activity)
-
-                            predicted_srpphat, predictions_srpphat = Evaluation.estimate_srpphat(model=srp_phat,
-                                                                               sample=signal,
-                                                                               voice_activity=voice_activity)
-
-                            predicted_music, predictions_music = Evaluation.estimate_music(model=music,
-                                                                          sample=signal,
-                                                                          voice_activity=voice_activity)
-
-                            # predicted, predictions_cnn = Evaluation.estimate_cnn_with_interpolation(model=dnn,
-                            #                                     sample=features.squeeze(dim=0),
-                            #                                     MAX_THETA=MAX_THETA,
-                            #                                     NUM_CLASSES=NUM_CLASSES,
-                            #                                     voice_activity=voice_activity)
+                            # predicted, predictions_dnn = Evaluation.estimate_dnn(model=dnn,
+                            #                                                      sample=features.squeeze(dim=0),
+                            #                                                      voice_activity=voice_activity)
                             #
-                            # predicted_srpphat, predictions_srpphat = Evaluation.estimate_srpphat_with_interpolation(model=srp_phat,
+                            # predicted_srpphat, predictions_srpphat = Evaluation.estimate_srpphat(model=srp_phat,
                             #                                                    sample=signal,
+                            #                                                    voice_activity=voice_activity)
+                            #
+                            # predicted_music, predictions_music = Evaluation.estimate_music(model=music,
+                            #                                               sample=signal,
+                            #                                               voice_activity=voice_activity)
+
+                            predicted, predictions_cnn = Evaluation.estimate_dnn_with_interpolation(model=dnn,
+                                                                                                    sample=features.squeeze(dim=0),
+                                                                                                    MAX_THETA=MAX_THETA,
+                                                                                                    NUM_CLASSES=NUM_CLASSES,
+                                                                                                    voice_activity=voice_activity)
+
+                            # predicted_srpphat, predictions_srpphat = Evaluation.estimate_srpphat_with_interpolation(model=srp_phat,
+                            #                                               sample=signal,
                             #                                               MAX_THETA=MAX_THETA,
                             #                                               NUM_CLASSES=NUM_CLASSES,
-                            #                                                    voice_activity=voice_activity)
+                            #                                               voice_activity=voice_activity)
                             #
                             # predicted_music, predictions_music = Evaluation.estimate_music_with_interpolation(model=music,
                             #                                               sample=signal,
@@ -222,10 +223,14 @@ if __name__ == '__main__':
                             #                                               voice_activity=voice_activity)
 
 
-
-
-
                             expected = int(target)
+
+                            # reset DOA shift (generalization towards unseen DOA's)
+                            if PARAMETERS['use_in_between_doas']:
+                                predicted -= 0.5
+                                predicted_srpphat -= 0.5
+                                predicted_music -= 0.5
+
 
                             list_occ[expected] += 1
 

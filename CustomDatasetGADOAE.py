@@ -114,7 +114,12 @@ class CustomDatasetGADOAE(CustomDataset):
         return signal
 
     def get_desired_sir(self):
-        return self.min_sir + torch.rand(1, device=self.device) * torch.abs(self.max_sir - self.min_sir)
+        sir = self.min_sir + torch.rand(1, device=self.device) * torch.abs(self.max_sir - self.min_sir)
+        # show that dnn generalizes towards unseen SIR's
+        if self.leave_out_exact_values:
+            while sir == np.round(sir):
+                sir = self.min_sir + torch.rand(1, device=self.device) * torch.abs(self.max_sir - self.min_sir)
+        return sir
 
     @staticmethod
     def augment_channels_repitition_last(coordinates, num_channels_desired, num_channels):
@@ -212,7 +217,7 @@ class CustomDatasetGADOAE(CustomDataset):
         else:
             raise Exception(f'Unknown argument given for <augmentation_style>: {self.augmentation_style}')
 
-        # Coordinates of array geometry but possibly with deviation
+        # Coordinates of array geometry, here we can add perturbations
         coordinates = Coordinates(self.device, self.num_channels, self.dimensions_array,
                                   self.max_uncertainty).generate(torch.from_numpy(self.mic_coordinates_array).to(self.device))
 

@@ -14,6 +14,7 @@ writer = SummaryWriter("runs/gcc")
 NUM_SAMPLES = 100000
 EPOCHS = 500
 NUM_CLASSES = 72
+MAX_CHANNELS = 15
 BATCH_SIZE = 32
 LEARNING_RATE = 0.00001
 NUM_WORKERS = 24
@@ -35,8 +36,8 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'max_rt_60': 1.0,
               'min_snr': 0,
               'max_snr': 30,
-              'min_sir': 5,
-              'max_sir': 5,
+              'min_sir': None,
+              'max_sir': None,
               'room_dim': [9, 5, 3],
               'room_dim_delta': [1.0, 1.0, 0.5],
               'mic_center': [4.5, 2.5, 1.0],
@@ -48,11 +49,11 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'vad_name': 'Energy', #Denk, Energy, MaKo, None, testNet
               'cut_silence': 'silence', #'none', 'beginning', 'silence'
               'frame_length': 256,
-              'max_sensor_spread': 0.1, #lookup noise: only up to 0.2
+              'max_sensor_spread': 0.2, #lookup noise: only up to 0.2
               'min_array_width': 0.4,
               'rasterize_array': False,
               'use_tau_mask': True,
-              'use_informed': True,
+              'use_informed': False,
               'informed_style': 'ifft', # ifft, random
               'sensor_grid_digits': 2, #2: 0.01m
               'num_classes': 72,
@@ -60,13 +61,16 @@ PARAMETERS = {'base_dir': BASE_DIR_ML,
               'num_sources': 1,
               'max_uncertainty': 0.00,
               'dimensions_array': 2,
-              'mask_percentile': 50,
+              'mask_percentile': None,
               'min_sensors': 3,
               'max_sensors': 15,
-              'augmentation_style': 'roll'}
+              'num_channels': MAX_CHANNELS,
+              'augmentation_style': 'repeat_roll', # repeat_last, repeat_all, repeat_roll
+              'leave_out_exact_values': False, #ATTENTION: During evaluation this MUST be set to False
+              'use_in_between_doas': True}
 
 is_training = True
-is_continue = True
+is_continue = False
 
 
 def boolean_string(s):
@@ -99,7 +103,7 @@ if __name__ == '__main__':
         dataset = Dataset_Training_Multi(parameters=PARAMETERS, device=device)
 
         # creating dnn and pushing it to CPU/GPU(s)
-        dnn = DNN_GADOAE_Multi(num_channels=PARAMETERS['max_sensors'],
+        dnn = DNN_GADOAE_Multi(num_channels=MAX_CHANNELS,
                                num_dimensions=PARAMETERS['dimensions_array'],
                                num_output_classes=NUM_CLASSES)
 

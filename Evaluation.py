@@ -122,7 +122,7 @@ def estimate_music(model, sample, voice_activity):
     return estimate, predictions
 
 
-def estimate_cnn_with_interpolation(model, sample, MAX_THETA, NUM_CLASSES, voice_activity):
+def estimate_dnn_with_interpolation(model, sample, MAX_THETA, NUM_CLASSES, voice_activity):
     model.eval()
 
     prediction_output = model.forward(sample)

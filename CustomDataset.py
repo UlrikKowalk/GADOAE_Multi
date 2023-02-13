@@ -38,6 +38,9 @@ class CustomDataset(Dataset):
         self.sensor_grid_digits = parameters['sensor_grid_digits']
         self.use_tau_mask = parameters['use_tau_mask']
 
+        self.leave_out_exact_values = parameters['leave_out_exact_values']
+        self.use_in_between_doas = parameters['use_in_between_doas']
+
         # greatest distance between two microphones within the array
         self.max_dist_array = 2.0 * self.max_sensor_spread
         self.max_difference_samples = int(math.ceil(1.5 * self.max_dist_array / self.nC * self.sample_rate))
@@ -216,6 +219,10 @@ class CustomDataset(Dataset):
 
     def generate_source(self, room_dim_desired, desired_label):
 
+        # to test generalization of the dnn towards unseen DOA's
+        if self.use_in_between_doas:
+            desired_label = desired_label.astype(np.float) + 0.5
+
         # Calculate source direction from label
         source_direction = 2 * np.pi / self.num_classes * desired_label
 
@@ -287,6 +294,10 @@ class CustomDataset(Dataset):
     def generate_noise(self, shape):
         # Generate noise at specific level
         snr_desired = self.max_snr - torch.rand(1) * np.abs(self.max_snr - self.min_snr)
+        # show that dnn generalizes towards unseen SNR's
+        if self.leave_out_exact_values:
+            while snr_desired == np.round(snr_desired):
+                snr_desired = self.max_snr - torch.rand(1) * np.abs(self.max_snr - self.min_snr)
 
         if self.noise_style == 'table':
             # Fetch frozen noise
